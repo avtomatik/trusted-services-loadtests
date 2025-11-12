@@ -26,4 +26,7 @@ class AsyncMQClient:
     async def publish(self, payload: dict):
         body = json.dumps(payload).encode()
         message = Message(body, delivery_mode=DeliveryMode.PERSISTENT)
-        await self.channel.default_exchange.publish(message, routing_key=self.queue_name)
+        await self.channel.default_exchange.publish(
+            message,
+            routing_key=self.queue_name
+        )

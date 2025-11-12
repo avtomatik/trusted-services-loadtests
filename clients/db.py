@@ -10,7 +10,11 @@ class AsyncDBClient:
 
     async def connect(self):
         if self.pool is None:
-            self.pool = await asyncpg.create_pool(dsn=self.dsn, min_size=self.min_size, max_size=self.max_size)
+            self.pool = await asyncpg.create_pool(
+                dsn=self.dsn,
+                min_size=self.min_size,
+                max_size=self.max_size
+            )
 
     async def close(self):
         if self.pool:
@@ -19,8 +23,15 @@ class AsyncDBClient:
 
     async def fetch_count(self, value: str) -> int:
         async with self.pool.acquire() as conn:
-            return await conn.fetchval('SELECT count(*) FROM my_table WHERE some_col=$1', value)
+            return await conn.fetchval(
+                'SELECT count(*) FROM my_table WHERE some_col=$1',
+                value
+            )
 
     async def insert_row(self, col1: str, col2: str) -> None:
         async with self.pool.acquire() as conn:
-            await conn.execute('INSERT INTO my_table (col1, col2) VALUES ($1, $2)', col1, col2)
+            await conn.execute(
+                'INSERT INTO my_table (col1, col2) VALUES ($1, $2)',
+                col1,
+                col2
+            )

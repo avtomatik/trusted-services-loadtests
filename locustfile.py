@@ -26,10 +26,18 @@ class AsyncBackendUser(User):
         self.mq = AsyncMQClient(mq_url)
         self.redis = AsyncRedisClient(redis_url)
 
-        await asyncio.gather(self.db.connect(), self.mq.connect(), self.redis.connect())
+        await asyncio.gather(
+            self.db.connect(),
+            self.mq.connect(),
+            self.redis.connect()
+        )
 
     async def on_stop(self):
-        await asyncio.gather(self.db.close(), self.mq.close(), self.redis.close())
+        await asyncio.gather(
+            self.db.close(),
+            self.mq.close(),
+            self.redis.close()
+        )
 
 
 class TSPLoadUser(AsyncBackendUser):
@@ -40,12 +48,18 @@ class TSPLoadUser(AsyncBackendUser):
             await self.db.fetch_count('value')
             duration = ms_since(start)
             events.request_success.fire(
-                request_type='postgres', name='select_count', response_time=duration, response_length=0
+                request_type='postgres',
+                name='select_count',
+                response_time=duration,
+                response_length=0
             )
         except Exception as e:
             duration = ms_since(start)
             events.request_failure.fire(
-                request_type='postgres', name='select_count', response_time=duration, exception=e
+                request_type='postgres',
+                name='select_count',
+                response_time=duration,
+                exception=e
             )
 
     @task(2)
@@ -55,12 +69,18 @@ class TSPLoadUser(AsyncBackendUser):
             await self.db.insert_row('a', 'b')
             duration = ms_since(start)
             events.request_success.fire(
-                request_type='postgres', name='insert', response_time=duration, response_length=0
+                request_type='postgres',
+                name='insert',
+                response_time=duration,
+                response_length=0
             )
         except Exception as e:
             duration = ms_since(start)
             events.request_failure.fire(
-                request_type='postgres', name='insert', response_time=duration, exception=e
+                request_type='postgres',
+                name='insert',
+                response_time=duration,
+                exception=e
             )
 
     @task(4)
@@ -71,12 +91,18 @@ class TSPLoadUser(AsyncBackendUser):
             await self.mq.publish(payload)
             duration = ms_since(start)
             events.request_success.fire(
-                request_type='rabbit', name='publish', response_time=duration, response_length=len(str(payload))
+                request_type='rabbit',
+                name='publish',
+                response_time=duration,
+                response_length=len(str(payload))
             )
         except Exception as e:
             duration = ms_since(start)
             events.request_failure.fire(
-                request_type='rabbit', name='publish', response_time=duration, exception=e
+                request_type='rabbit',
+                name='publish',
+                response_time=duration,
+                exception=e
             )
 
     @task(3)
@@ -88,10 +114,16 @@ class TSPLoadUser(AsyncBackendUser):
             val = await self.redis.get_key(key)
             duration = ms_since(start)
             events.request_success.fire(
-                request_type='redis', name='set_get', response_time=duration, response_length=len(val or '')
+                request_type='redis',
+                name='set_get',
+                response_time=duration,
+                response_length=len(val or '')
             )
         except Exception as e:
             duration = ms_since(start)
             events.request_failure.fire(
-                request_type='redis', name='set_get', response_time=duration, exception=e
+                request_type='redis',
+                name='set_get',
+                response_time=duration,
+                exception=e
             )
