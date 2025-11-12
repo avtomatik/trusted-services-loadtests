@@ -1,14 +1,14 @@
-import aioredis
+import redis.asyncio as redis
 
 
 class AsyncRedisClient:
     def __init__(self, url: str):
         self.url = url
-        self.redis: aioredis.Redis | None = None
+        self.redis: redis.Redis | None = None
 
     async def connect(self):
         if self.redis is None:
-            self.redis = aioredis.from_url(self.url, decode_responses=True)
+            self.redis = redis.from_url(self.url, decode_responses=True)
 
     async def close(self):
         if self.redis:
