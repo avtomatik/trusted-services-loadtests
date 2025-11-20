@@ -1,0 +1,21 @@
+[project]
+name = "trusted-services-loadtests"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aio-pika",
+    "asyncpg",
+    "configargparse",
+    "flask",
+    "flask-cors",
+    "flask-login",
+    "locust",
+    "locust-cloud",
+    "python-dotenv",
+    "python-socketio",
+    "python-engineio",
+    "redis",
+    "requests",
+]
