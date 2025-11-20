@@ -3,50 +3,113 @@
 Async Locust-based load testing suite for the Trusted Services Platform (TSP).
 
 Features:
-- Async tasks using Locust `User` with `async def` tasks
-- Postgres (asyncpg) read/write operations
-- RabbitMQ (aio-pika) publish operations
-- Redis (aioredis) set/get operations
+- Async load tests using Locust `User` with `async def` tasks
+- Postgres operations via `asyncpg`
+- RabbitMQ publish operations via `aio-pika`
+- Redis interactions via `redis` (async client)
 - Docker Compose stack for local testing (Locust master, workers, Postgres, RabbitMQ, Redis)
 
-## Quickstart (local, docker)
+---
 
-1. Copy env file:
+## Quickstart (local, Docker)
+
+### 1. Create environment file
 
 ```bash
 cp .env.example .env
 ````
 
-2. Start local stack (will run Locust master + DB + RabbitMQ + Redis):
+### 2. Start the full local stack
+
+This launches:
+
+* Locust master
+* Locust worker(s)
+* Postgres
+* RabbitMQ
+* Redis
 
 ```bash
 docker compose up --build
 ```
 
-3. Open Locust UI: [http://localhost:8089](http://localhost:8089)
+### 3. Open Locust UI
 
-Start a test by setting number of users and spawn rate.
+[http://localhost:8089](http://localhost:8089)
 
-## Headless run (locust master)
+Configure users + spawn rate and start the test.
 
-To run headless (example):
+---
+
+## Running Locally (without Docker)
+
+This project uses **uv** for dependency management.
+
+### 1. Create venv & install dependencies
 
 ```bash
-# inside container or local virtualenv where requirements are installed
-locust -f locustfile.py --headless -u 500 -r 50 --run-time 10m --csv=results
+uv venv
+source .venv/bin/activate
+uv sync
 ```
 
-## Run distributed (workers)
+### 2. Run Locust
 
-Start master first then workers (docker-compose already includes a sample worker service). Adjust worker count for scale.
+```bash
+uv run locust -f locustfile.py
+```
 
-## Requirements
+---
 
-Python 3.12+ recommended
+## Headless Run Example
 
-See `requirements.txt`.
+Useful for CI or automated load tests:
 
-## Safety
+```bash
+uv run locust -f locustfile.py \
+  --headless \
+  -u 500 \
+  -r 50 \
+  --run-time 10m \
+  --csv=results
+```
 
-* **DO NOT** point this at production systems without approval.
-* Use test DB/queues and sandbox environments.
+---
+
+## Distributed Mode
+
+Locust supports distributed load generation using master + multiple workers.
+
+* Start **master** first.
+* Start one or more **workers** and point them at master.
+* The included `docker-compose.yml` demonstrates this setup.
+
+```bash
+docker compose up --build
+```
+
+To scale workers:
+
+```bash
+docker compose up --scale worker=5
+```
+
+---
+
+## Project Requirements
+
+* Python **3.12+**
+* `uv` (recommended for development)
+* Docker (optional, for local infrastructure)
+
+---
+
+## Safety Notice
+
+⚠️ **DO NOT** run load tests against production environments without explicit approval.
+
+* Use sandbox / staging targets
+* Use non-production databases, queues, and credentials
+* Monitor resource usage to avoid accidental outages
+
+---
