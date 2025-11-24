@@ -8,7 +8,7 @@ from locust import User, between, events, task
 from clients.db import AsyncDBClient
 from clients.mq import AsyncMQClient
 from clients.redis import AsyncRedisClient
-from utils.timing import ms_since
+from core.config import settings
 
 load_dotenv()
 
@@ -18,13 +18,13 @@ class AsyncBackendUser(User):
     wait_time = between(0.5, 2)
 
     async def on_start(self):
-        db_dsn = os.getenv('DB_DSN', 'postgresql://user:password@db:5432/mydb')
-        mq_url = os.getenv('MQ_URL', 'amqp://guest:guest@rabbitmq/')
-        redis_url = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+        self.db = PostgresClient(settings.db_dsn)
+        self.mq = RabbitMQClient(settings.mq_url)
+        self.redis = RedisClient(settings.redis_url)
 
-        self.db = AsyncDBClient(db_dsn)
-        self.mq = AsyncMQClient(mq_url)
-        self.redis = AsyncRedisClient(redis_url)
+        self.db.connect()
+        self.mq.connect()
+        self.redis.connect()
 
         await asyncio.gather(
             self.db.connect(),
