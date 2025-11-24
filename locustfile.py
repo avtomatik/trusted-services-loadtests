@@ -1,129 +1,120 @@
-import asyncio
-import os
 import time
 
 from dotenv import load_dotenv
-from locust import User, between, events, task
+from locust import User, constant, events, task
 
-from clients.db import AsyncDBClient
-from clients.mq import AsyncMQClient
-from clients.redis import AsyncRedisClient
-from utils.timing import ms_since
+from clients.db import PostgresClient
+from clients.mq import RabbitMQClient
+from clients.redis import RedisClient
+from core.config import settings
+from utils.timing import SECONDS_TO_MILLISECONDS, get_run_time_in_ms
 
 load_dotenv()
 
 
-class AsyncBackendUser(User):
+class BackendUser(User):
     abstract = True
-    wait_time = between(0.5, 2)
+    wait_time = constant(1)
 
-    async def on_start(self):
-        db_dsn = os.getenv('DB_DSN', 'postgresql://user:password@db:5432/mydb')
-        mq_url = os.getenv('MQ_URL', 'amqp://guest:guest@rabbitmq/')
-        redis_url = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+    def on_start(self):
+        self.db = PostgresClient(settings.db_dsn)
+        self.mq = RabbitMQClient(settings.mq_url)
+        self.redis = RedisClient(settings.redis_url)
 
-        self.db = AsyncDBClient(db_dsn)
-        self.mq = AsyncMQClient(mq_url)
-        self.redis = AsyncRedisClient(redis_url)
+        self.db.connect()
+        self.mq.connect()
+        self.redis.connect()
 
-        await asyncio.gather(
-            self.db.connect(),
-            self.mq.connect(),
-            self.redis.connect()
-        )
-
-    async def on_stop(self):
-        await asyncio.gather(
-            self.db.close(),
-            self.mq.close(),
-            self.redis.close()
-        )
+    def on_stop(self):
+        self.db.close()
+        self.mq.close()
+        self.redis.close()
 
 
-class TSPLoadUser(AsyncBackendUser):
+class TSPLoadUser(BackendUser):
     @task(3)
-    async def query_db(self):
+    def query_db(self):
         start = time.perf_counter()
         try:
-            await self.db.fetch_count('value')
-            duration = ms_since(start)
+            self.db.fetch_count('value')
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='postgres',
                 name='select_count',
-                response_time=duration,
+                response_time=response_time,
                 response_length=0
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='postgres',
                 name='select_count',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
     @task(2)
-    async def insert_db(self):
+    def insert_db(self):
         start = time.perf_counter()
         try:
-            await self.db.insert_row('a', 'b')
-            duration = ms_since(start)
+            self.db.insert_row('Some log message')
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='postgres',
                 name='insert',
-                response_time=duration,
+                response_time=response_time,
                 response_length=0
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='postgres',
                 name='insert',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
     @task(4)
-    async def publish_message(self):
+    def publish_message(self):
         start = time.perf_counter()
         try:
-            payload = {'ts': time.time(), 'payload': 'async_test'}
-            await self.mq.publish(payload)
-            duration = ms_since(start)
+            payload = {'ts': time.time(), 'payload': 'sync_test'}
+            self.mq.publish(payload)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='rabbit',
                 name='publish',
-                response_time=duration,
+                response_time=response_time,
                 response_length=len(str(payload))
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='rabbit',
                 name='publish',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
     @task(3)
-    async def redis_ops(self):
+    def redis_ops(self):
         start = time.perf_counter()
         try:
-            key = f'test:{int(time.time() * 1000)}'
-            await self.redis.set_key(key, 'value', expire=120)
-            val = await self.redis.get_key(key)
-            duration = ms_since(start)
+            key = f'test:{int(time.time() * SECONDS_TO_MILLISECONDS)}'
+            self.redis.set_key(key, 'value', expire=120)
+            val = self.redis.get_key(key)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='redis',
                 name='set_get',
-                response_time=duration,
+                response_time=response_time,
                 response_length=len(val or '')
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='redis',
                 name='set_get',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
