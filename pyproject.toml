@@ -18,6 +18,8 @@ dependencies = [
     "python-engineio",
     "redis",
     "requests",
+    "psycopg[binary,pool]",
+    "pika",
 ]
 
 [tool.locust]
