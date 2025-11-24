@@ -46,19 +46,19 @@ class TSPLoadUser(AsyncBackendUser):
         start = time.perf_counter()
         try:
             await self.db.fetch_count('value')
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='postgres',
                 name='select_count',
-                response_time=duration,
+                response_time=response_time,
                 response_length=0
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='postgres',
                 name='select_count',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
@@ -67,19 +67,19 @@ class TSPLoadUser(AsyncBackendUser):
         start = time.perf_counter()
         try:
             await self.db.insert_row('a', 'b')
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='postgres',
                 name='insert',
-                response_time=duration,
+                response_time=response_time,
                 response_length=0
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='postgres',
                 name='insert',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
@@ -89,19 +89,19 @@ class TSPLoadUser(AsyncBackendUser):
         try:
             payload = {'ts': time.time(), 'payload': 'async_test'}
             await self.mq.publish(payload)
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='rabbit',
                 name='publish',
-                response_time=duration,
+                response_time=response_time,
                 response_length=len(str(payload))
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='rabbit',
                 name='publish',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
 
@@ -112,18 +112,18 @@ class TSPLoadUser(AsyncBackendUser):
             key = f'test:{int(time.time() * 1000)}'
             await self.redis.set_key(key, 'value', expire=120)
             val = await self.redis.get_key(key)
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_success.fire(
                 request_type='redis',
                 name='set_get',
-                response_time=duration,
+                response_time=response_time,
                 response_length=len(val or '')
             )
         except Exception as e:
-            duration = ms_since(start)
+            response_time = get_run_time_in_ms(start)
             events.request_failure.fire(
                 request_type='redis',
                 name='set_get',
-                response_time=duration,
+                response_time=response_time,
                 exception=e
             )
