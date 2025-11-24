@@ -1,37 +1,41 @@
-import asyncpg
+from psycopg_pool import ConnectionPool
 
 
-class AsyncDBClient:
+class PostgresClient:
     def __init__(self, dsn: str, min_size: int = 1, max_size: int = 10):
-        self.dsn = dsn
-        self.pool: asyncpg.Pool | None = None
-        self.min_size = min_size
-        self.max_size = max_size
+        self.dsn: str = dsn
+        self.pool: ConnectionPool | None = None
+        self.min_size: int = min_size
+        self.max_size: int = max_size
 
-    async def connect(self):
+    def connect(self):
         if self.pool is None:
-            self.pool = await asyncpg.create_pool(
-                dsn=self.dsn,
+            self.pool = ConnectionPool(
+                self.dsn,
                 min_size=self.min_size,
-                max_size=self.max_size
+                max_size=self.max_size,
+                timeout=30,
             )
 
-    async def close(self):
+    def close(self):
         if self.pool:
-            await self.pool.close()
+            self.pool.close()
             self.pool = None
 
-    async def fetch_count(self, value: str) -> int:
-        async with self.pool.acquire() as conn:
-            return await conn.fetchval(
-                'SELECT count(*) FROM my_table WHERE some_col=$1',
-                value
-            )
+    def fetch_count(self, value: str) -> int:
+        with self.pool.connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    'SELECT count(*) FROM logs WHERE message=%s', (value,)
+                )
+                result = cursor.fetchone()
+                return result[0]
 
-    async def insert_row(self, col1: str, col2: str) -> None:
-        async with self.pool.acquire() as conn:
-            await conn.execute(
-                'INSERT INTO my_table (col1, col2) VALUES ($1, $2)',
-                col1,
-                col2
-            )
+    def insert_row(self, message: str) -> None:
+        with self.pool.connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    'INSERT INTO logs (message, timestamp) VALUES (%s, NOW())',
+                    (message,)
+                )
+                conn.commit()

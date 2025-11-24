@@ -17,7 +17,7 @@ Develop a **Locust.io-based load testing module** to evaluate the performance an
 * Use **Locust.io** as the core framework for defining and executing load tests.
 * Implement **custom user classes** analogous to `HttpUser`:
 
-  * `DBUser` – for database interactions
+  * `PostgresClient` – for database interactions
   * `RabbitMQUser` – for message queue interactions
   * `RedisUser` – for cache operations
 * Extend Locust’s behavior model to support **load testing chains**:
