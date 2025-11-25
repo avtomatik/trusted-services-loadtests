@@ -5,21 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "aio-pika",
-    "asyncpg",
     "configargparse",
     "flask",
     "flask-cors",
     "flask-login",
     "locust",
     "locust-cloud",
-    "python-dotenv",
+    "pika",
+    "psycopg[binary,pool]",
+    "pydantic-settings",
     "python-socketio",
-    "python-engineio",
     "redis",
     "requests",
-    "psycopg[binary,pool]",
-    "pika",
 ]
 
 [tool.locust]

@@ -1,25 +1,21 @@
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic_settings import BaseSettings
 
 
-class Settings:
-    DB_USER: str = os.getenv('DB_USER', 'postgres')
-    DB_PASSWORD: str = os.getenv('DB_PASSWORD', 'default_pass')
-    DB_HOST: str = os.getenv('DB_HOST', 'localhost')
-    DB_PORT: str = os.getenv('DB_PORT', '5432')
-    DB_NAME: str = os.getenv('DB_NAME', 'default_db_name')
+class Settings(BaseSettings):
+    DB_USER: str = 'postgres'
+    DB_PASSWORD: str = 'default_pass'
+    DB_HOST: str = 'localhost'
+    DB_PORT: str = '5432'
+    DB_NAME: str = 'default_db_name'
 
-    MQ_USER: str = os.getenv('MQ_USER', 'guest')
-    MQ_PASSWORD: str = os.getenv('MQ_PASSWORD', 'guest')
-    MQ_HOST: str = os.getenv('MQ_HOST', 'localhost')
-    MQ_PORT: str = os.getenv('MQ_PORT', '5672')
+    MQ_USER: str = 'guest'
+    MQ_PASSWORD: str = 'guest'
+    MQ_HOST: str = 'localhost'
+    MQ_PORT: str = '5672'
 
-    REDIS_HOST: str = os.getenv('REDIS_HOST', 'localhost')
-    REDIS_PORT: str = os.getenv('REDIS_PORT', '6379')
-    REDIS_DB: str = os.getenv('REDIS_DB', '0')
+    REDIS_HOST: str = 'localhost'
+    REDIS_PORT: str = '6379'
+    REDIS_DB: str = '0'
 
     @property
     def db_dsn(self) -> str:
@@ -38,6 +34,9 @@ class Settings:
     @property
     def redis_url(self) -> str:
         return f'redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}'
+
+    class Config:
+        env_file = '.env'
 
 
 settings = Settings()
