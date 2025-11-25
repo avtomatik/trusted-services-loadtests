@@ -1,6 +1,5 @@
 import time
 
-from dotenv import load_dotenv
 from locust import User, constant, events, task
 
 from clients.db import PostgresClient
@@ -8,8 +7,6 @@ from clients.mq import RabbitMQClient
 from clients.redis import RedisClient
 from core.config import settings
 from utils.timing import SECONDS_TO_MILLISECONDS, get_run_time_in_ms
-
-load_dotenv()
 
 
 class BackendUser(User):
