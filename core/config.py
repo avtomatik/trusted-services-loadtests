@@ -27,8 +27,8 @@ class Settings(BaseSettings):
     @property
     def mq_url(self) -> str:
         return (
-            f'amqp://{self.MQ_USER}:{self.MQ_PASSWORD}'
-            f'@{self.MQ_HOST}:{self.MQ_PORT}/'
+            f'amqp://{self.MQ_USER}:{self.MQ_PASSWORD}@'
+            f'{self.MQ_HOST}:{self.MQ_PORT}/'
         )
 
     @property
