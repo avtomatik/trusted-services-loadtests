@@ -4,7 +4,7 @@ import pika
 
 
 class RabbitMQClient:
-    def __init__(self, url: str, queue_name: str = 'test_queue'):
+    def __init__(self, url: str, queue_name: str = "test_queue"):
         self.url = url
         self.queue_name = queue_name
         self.connection = None
@@ -27,8 +27,8 @@ class RabbitMQClient:
     def publish(self, payload: dict):
         body = json.dumps(payload).encode()
         self.channel.basic_publish(
-            exchange='',
+            exchange="",
             routing_key=self.queue_name,
             body=body,
-            properties=pika.BasicProperties(delivery_mode=2)  # Persistent
+            properties=pika.BasicProperties(delivery_mode=2),  # Persistent
         )

@@ -26,7 +26,7 @@ class PostgresClient:
         with self.pool.connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
-                    'SELECT count(*) FROM logs WHERE message=%s', (value,)
+                    "SELECT count(*) FROM logs WHERE message=%s", (value,)
                 )
                 result = cursor.fetchone()
                 return result[0]
@@ -35,7 +35,7 @@ class PostgresClient:
         with self.pool.connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
-                    'INSERT INTO logs (message, timestamp) VALUES (%s, NOW())',
-                    (message,)
+                    "INSERT INTO logs (message, timestamp) VALUES (%s, NOW())",
+                    (message,),
                 )
                 conn.commit()

@@ -1,12 +1,12 @@
 import time
 
-from locust import User, constant, events, task
+from locust import User, constant, task
 
 from clients.db import PostgresClient
 from clients.mq import RabbitMQClient
 from clients.redis import RedisClient
 from core.config import settings
-from utils.timing import SECONDS_TO_MILLISECONDS, get_run_time_in_ms
+from utils.timing import SECONDS_TO_MILLISECONDS
 
 
 class BackendUser(User):
@@ -31,87 +31,38 @@ class BackendUser(User):
 class TSPLoadUser(BackendUser):
     @task(3)
     def query_db(self):
-        start = time.perf_counter()
-        try:
-            self.db.fetch_count('value')
-            response_time = get_run_time_in_ms(start)
-            events.request_success.fire(
-                request_type='postgres',
-                name='select_count',
-                response_time=response_time,
-                response_length=0
-            )
-        except Exception as e:
-            response_time = get_run_time_in_ms(start)
-            events.request_failure.fire(
-                request_type='postgres',
-                name='select_count',
-                response_time=response_time,
-                exception=e
-            )
+        with self.environment.events.request.request(
+            request_type="postgres", name="select_count"
+        ) as req:
+            val = self.db.fetch_count("value")
+            req.response_length = len(str(val))
 
     @task(2)
     def insert_db(self):
-        start = time.perf_counter()
-        try:
-            self.db.insert_row('Some log message')
-            response_time = get_run_time_in_ms(start)
-            events.request_success.fire(
-                request_type='postgres',
-                name='insert',
-                response_time=response_time,
-                response_length=0
-            )
-        except Exception as e:
-            response_time = get_run_time_in_ms(start)
-            events.request_failure.fire(
-                request_type='postgres',
-                name='insert',
-                response_time=response_time,
-                exception=e
-            )
+        with self.environment.events.request.request(
+            request_type="postgres", name="insert"
+        ) as req:
+            self.db.insert_row("Some log message")
+            req.response_length = 0
 
     @task(4)
     def publish_message(self):
-        start = time.perf_counter()
-        try:
-            payload = {'ts': time.time(), 'payload': 'sync_test'}
+        payload = {"ts": time.time(), "payload": "sync_test"}
+
+        with self.environment.events.request.request(
+            request_type="rabbit", name="publish"
+        ) as req:
             self.mq.publish(payload)
-            response_time = get_run_time_in_ms(start)
-            events.request_success.fire(
-                request_type='rabbit',
-                name='publish',
-                response_time=response_time,
-                response_length=len(str(payload))
-            )
-        except Exception as e:
-            response_time = get_run_time_in_ms(start)
-            events.request_failure.fire(
-                request_type='rabbit',
-                name='publish',
-                response_time=response_time,
-                exception=e
-            )
+            req.response_length = len(str(payload))
 
     @task(3)
     def redis_ops(self):
-        start = time.perf_counter()
-        try:
-            key = f'test:{int(time.time() * SECONDS_TO_MILLISECONDS)}'
-            self.redis.set_key(key, 'value', expire=120)
+        key = f"test:{int(time.time() * SECONDS_TO_MILLISECONDS)}"
+
+        with self.environment.events.request.request(
+            request_type="redis", name="set_get"
+        ) as req:
+
+            self.redis.set_key(key, "value", expire=120)
             val = self.redis.get_key(key)
-            response_time = get_run_time_in_ms(start)
-            events.request_success.fire(
-                request_type='redis',
-                name='set_get',
-                response_time=response_time,
-                response_length=len(val or '')
-            )
-        except Exception as e:
-            response_time = get_run_time_in_ms(start)
-            events.request_failure.fire(
-                request_type='redis',
-                name='set_get',
-                response_time=response_time,
-                exception=e
-            )
+            req.response_length = len(val or "")
